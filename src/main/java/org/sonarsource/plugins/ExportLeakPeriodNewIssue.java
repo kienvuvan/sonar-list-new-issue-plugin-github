@@ -3,6 +3,7 @@ package org.sonarsource.plugins;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -80,49 +81,46 @@ public class ExportLeakPeriodNewIssue implements PostProjectAnalysisTask {
 		}
 	}
 
-	// public static void main(String[] args) {
-	// ExportLeakPeriodNewIssue exportLeakPeriodNewIssue = new
-	// ExportLeakPeriodNewIssue();
-	// String projectKey = "jee7_c1s-all";
-	// String projectName = "jee7_c1s-all";
-	// String projectUuid = "AWy9vL77IO9B8pPmv1lm";
-	// // Get information in file changelog.xml when Jenkins build success
-	// List<ResultSeparation> resultSeparations = exportLeakPeriodNewIssue
-	// .getInfoIdTicket(exportLeakPeriodNewIssue.getInfoFileChangeLog(projectKey));
-	//
-	// IssueDao issueDao = new IssueDao();
-	//
-	// Map<String, Map<Integer, Set<String>>> datas =
-	// exportLeakPeriodNewIssue.filterData(resultSeparations);
-	// if (!datas.isEmpty()) {
-	// for (String emailUser : datas.keySet()) {
-	// LOGGER.info(emailUser);
-	// Map<Integer, Set<String>> listIdTickets = datas.get(emailUser);
-	// for (Integer idTicket : listIdTickets.keySet()) {
-	// LOGGER.info("\t" + idTicket);
-	// LOGGER.info("\t\t" + listIdTickets.get(idTicket));
-	// IssueReportDto issueReportDto =
-	// issueDao.getLeakPeriodNewIssueForUser(projectName, projectUuid,
-	// emailUser, listIdTickets.get(idTicket));
-	// LOGGER.info("Number issues :" + issueReportDto.getIssueKees().size());
-	// issueReportDto.setProjectName(projectName);
-	// }
-	// }
-	// } else {
-	// LOGGER.info("Empty");
-	// }
-	//
-	// LOGGER.info("++++++++++++++++++++++");
-	// Set<String> committers =
-	// exportLeakPeriodNewIssue.getCommitterList(resultSeparations);
-	// IssueReportDto is = issueDao.getLeakPeriodNewIssue(projectName,
-	// projectUuid, committers);
-	// Map<String, List<String>> issues = is.getIssues();
-	// for (String emailUser : issues.keySet()) {
-	// LOGGER.info(emailUser);
-	// LOGGER.info("Number issues :" + issues.get(emailUser).size() + "");
-	// }
-	// }
+	public static void main(String[] args) {
+		ExportLeakPeriodNewIssue exportLeakPeriodNewIssue = new ExportLeakPeriodNewIssue();
+		String projectKey = "jee7_c1s-all";
+		String projectName = "jee7_c1s-all";
+		String projectUuid = "AWy9vL77IO9B8pPmv1lm";
+		// Get information in file changelog.xml when Jenkins build success
+		List<ResultSeparation> resultSeparations = exportLeakPeriodNewIssue
+				.getInfoIdTicket(exportLeakPeriodNewIssue.getInfoFileChangeLog(projectKey));
+
+		IssueDao issueDao = new IssueDao();
+
+		Map<String, Map<Integer, Set<String>>> datas = exportLeakPeriodNewIssue.filterData(resultSeparations);
+		if (!datas.isEmpty()) {
+			for (String emailUser : datas.keySet()) {
+				LOGGER.info(emailUser);
+				Map<Integer, Set<String>> listIdTickets = datas.get(emailUser);
+				for (Integer idTicket : listIdTickets.keySet()) {
+					LOGGER.info("\t" + idTicket);
+					LOGGER.info("\t\t" + listIdTickets.get(idTicket));
+					IssueReportDto issueReportDto = issueDao.getLeakPeriodNewIssueForUser(projectName, projectUuid,
+							emailUser, listIdTickets.get(idTicket));
+					LOGGER.info("Number issues :" + issueReportDto.getIssueKees().size());
+					issueReportDto.setProjectName(projectName);
+				}
+			}
+		} else {
+			LOGGER.info("Empty");
+		}
+
+		// LOGGER.info("++++++++++++++++++++++");
+		// Set<String> committers =
+		// exportLeakPeriodNewIssue.getCommitterList(resultSeparations);
+		// IssueReportDto is = issueDao.getLeakPeriodNewIssue(projectName,
+		// projectUuid, committers);
+		// Map<String, List<String>> issues = is.getIssues();
+		// for (String emailUser : issues.keySet()) {
+		// LOGGER.info(emailUser);
+		// LOGGER.info("Number issues :" + issues.get(emailUser).size() + "");
+		// }
+	}
 
 	/**
 	 * Filter data to format Map<String - EmailUser, Map<Integer -
@@ -170,22 +168,25 @@ public class ExportLeakPeriodNewIssue implements PostProjectAnalysisTask {
 	 * @return ResultSeparation
 	 */
 	private List<ResultSeparation> getInfoFileChangeLog(String projectKey) {
+		String buildPath = CommonConstant.ROOT_JENKINS_BUILD + projectKey + "\\builds";
 		List<ResultSeparation> results = new ArrayList<>();
-		// Get lastBuildNumber in jenkins 
-		File nextBuildNumberFile = new File(CommonConstant.ROOT_JENKINS_BUILD + projectKey + "\\nextBuildNumber");
-		String nextBuildNumberStr = "";
-		int lastBuildNumber = -1;
-		// Read file nextBuildNumber
-		try (BufferedReader br = new BufferedReader(new FileReader(nextBuildNumberFile))) {
-			if ((nextBuildNumberStr = br.readLine()) != null) {
-				lastBuildNumber = Integer.parseInt(nextBuildNumberStr.trim()) - 1;
+		// Get lastBuildNumber in jenkins build
+		File nextBuildNumberFile = new File(buildPath);
+		List<Integer> buildNumber = new ArrayList<>();
+		nextBuildNumberFile.list(new FilenameFilter() {
+			@Override
+			public boolean accept(File dir, String name) {
+				if (!name.matches("\\d+")) {
+					return false;
+				} else {
+					buildNumber.add(Integer.parseInt(name.trim()));
+					return true;
+				}
 			}
-		} catch (IOException e) {
-			LOGGER.error("Error read file : " + e.getMessage());
-		}
+		});
+		int lastBuildNumber = Collections.max(buildNumber);
 		LOGGER.info("Last Build : " + lastBuildNumber);
-		File changeLog = new File(
-				CommonConstant.ROOT_JENKINS_BUILD + projectKey + "\\builds\\" + lastBuildNumber + "\\changelog.xml");
+		File changeLog = new File(buildPath + "\\" + lastBuildNumber + "\\changelog.xml");
 		try (BufferedReader bufferedReader = new BufferedReader(new FileReader(changeLog))) {
 			String line = "";
 			int indexLine = 1;

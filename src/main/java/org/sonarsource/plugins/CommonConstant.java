@@ -22,10 +22,9 @@ public class CommonConstant {
 	public static final String SONAR_QUBE_JDBC_PASS = "nam0687";
 
 	// Root folder Jenkins build jobs
-	// public static final String ROOT_JENKINS_BUILD = "C:\\Program Files
-	// (x86)\\Jenkins\\jobs\\";
+	public static final String ROOT_JENKINS_BUILD = "C:\\Program Files (x86)\\Jenkins\\jobs\\";
 
-	public static final String ROOT_JENKINS_BUILD = "C:\\Windows\\System32\\config\\systemprofile\\.jenkins\\jobs\\";
+//	public static final String ROOT_JENKINS_BUILD = "C:\\Windows\\System32\\config\\systemprofile\\.jenkins\\jobs\\";
 
 	public static final String URI_REDMINE = "http://192.168.0.136/redmine/";
 	public static final String API_ACCESS_KEY = "7555f0adb09521517b42402e7ed4ce300d24cd4d";
